@@ -43,3 +43,22 @@ exports.getChats = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+exports.createChat = async (req, res) => {
+  try {
+    const { participantIds } = req.body;
+
+    // Create a new chat
+    const newChat = new Chat({
+      participants: [...participantIds, req.user._id],
+    });
+
+    // Save the chat to the database
+    const savedChat = await newChat.save();
+
+    res.status(201).json(savedChat);
+  } catch (error) {
+    console.error("Error creating chat:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
