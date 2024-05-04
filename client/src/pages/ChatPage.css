@@ -1,0 +1,15 @@
+.chat-page {
+    display: flex;
+    height: 100vh;
+  }
+
+  .chat-list-container {
+    flex: 1;
+    background-color: #f5f5f5;
+    padding: 20px;
+  }
+
+  .chat-window-container {
+    flex: 3;
+    padding: 20px;
+  }
