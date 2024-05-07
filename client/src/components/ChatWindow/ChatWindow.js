@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { getChatMessages, sendMessage } from "../../services/chatService";
 import "./ChatWindow.css";
+import io from "socket.io-client";
 
 function ChatWindow({ contact }) {
   const [messages, setMessages] = useState([]);
@@ -8,6 +9,20 @@ function ChatWindow({ contact }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const chatWindowRef = useRef(null);
+  const socketRef = useRef(null);
+
+  useEffect(() => {
+    socketRef.current = io();
+
+    socketRef.current.on("new_message", (message) => {
+      setMessages((prevMessages) => [...prevMessages, message]);
+      socketRef.current.emit("message_delivered", message._id);
+    });
+
+    return () => {
+      socketRef.current.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     const fetchChatHistory = async () => {

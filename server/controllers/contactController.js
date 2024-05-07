@@ -24,21 +24,23 @@ exports.getRecentContacts = async (req, res) => {
 
 exports.addContact = async (req, res) => {
   try {
-    const { contactId } = req.body;
-    const contact = await Contact.findOne({ user: req.user._id, contactId });
+    const { name, profilePicture, status } = req.body;
+    const userId = req.user._id;
 
-    if (contact) {
-      return res.status(400).json({ error: "Contact already exists" });
+    if (!name) {
+      return res.status(400).json({ error: "Name field is required" });
     }
 
     const newContact = new Contact({
-      user: req.user._id,
-      contactId,
-      // Add other contact details as needed
+      user: userId,
+      name,
+      profilePicture,
+      status,
     });
 
-    await newContact.save();
-    res.status(201).json(newContact);
+    const savedContact = await newContact.save();
+
+    res.status(201).json(savedContact);
   } catch (error) {
     console.error("Error adding contact:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -57,6 +59,12 @@ exports.deleteContact = async (req, res) => {
     res.json({ message: "Contact deleted successfully" });
   } catch (error) {
     console.error("Error deleting contact:", error);
-    res.status(500).json({ error: "Internal server error" });
+    if (error.name === "CastError" && error.kind === "ObjectId") {
+      // Handle invalid ObjectId format
+      res.status(400).json({ error: "Invalid contact ID" });
+    } else {
+      // Handle other errors
+      res.status(500).json({ error: "Internal server error" });
+    }
   }
 };
