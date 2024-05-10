@@ -1,4 +1,5 @@
 const express = require("express");
+const cors = require("cors");
 require("dotenv").config();
 const connectDB = require("./config/database");
 const userRoutes = require("./routes/userRoutes");
@@ -8,6 +9,9 @@ const io = require("socket.io")(server);
 
 // Connect to MongoDB
 connectDB();
+
+// Enable CORS for all routes
+app.use(cors());
 
 app.use(express.json());
 
@@ -23,6 +27,11 @@ app.use("/api/contacts", require("./routes/contactRoutes"));
 app.use("/api/settings", require("./routes/settingsRoutes"));
 
 const chatController = require("./controllers/chatController")(io);
+
+app.use((err, req, res, next) => {
+  console.error("Error:", err);
+  res.status(500).json({ error: "Internal server error" });
+});
 
 const port = process.env.PORT || 5000;
 server.listen(port, () => {

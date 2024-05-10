@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { login } from "../../services/authService";
+import { AuthContext } from "../../AuthContext";
 import "./Login.css";
 
 function Login() {
@@ -8,12 +9,17 @@ function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const { login: setAuthLogin } = useContext(AuthContext);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      await login(username, password);
+      const response = await login(username, password);
+      console.log("Login response:", response);
+      console.log("Before navigate to dashboard");
+      setAuthLogin(response.user);
       navigate("/dashboard");
+      console.log("After navigate to dashboard");
     } catch (error) {
       console.error("Login error:", error);
       setError("Invalid username or password");

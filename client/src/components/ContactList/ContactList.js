@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   getContacts,
   getRecentContacts,
   addContact,
 } from "../../services/contactService";
 import "./ContactList.css";
+import { AuthContext } from "../../AuthContext";
 
 function ContactList({ onContactSelect }) {
   const [contacts, setContacts] = useState([]);
@@ -12,11 +13,12 @@ function ContactList({ onContactSelect }) {
   const [recentContacts, setRecentContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { user } = useContext(AuthContext);
 
   useEffect(() => {
     const fetchContacts = async () => {
       try {
-        const data = await getContacts();
+        const data = await getContacts(user.token);
         setContacts(data);
         setLoading(false);
       } catch (error) {
@@ -28,7 +30,7 @@ function ContactList({ onContactSelect }) {
 
     const fetchRecentContacts = async () => {
       try {
-        const data = await getRecentContacts();
+        const data = await getRecentContacts(user.token);
         setRecentContacts(data);
       } catch (error) {
         console.error("Error fetching recent contacts:", error);
@@ -38,7 +40,7 @@ function ContactList({ onContactSelect }) {
 
     fetchContacts();
     fetchRecentContacts();
-  }, []);
+  }, [user.token]);
 
   const handleSearchChange = (e) => {
     setSearchQuery(e.target.value);

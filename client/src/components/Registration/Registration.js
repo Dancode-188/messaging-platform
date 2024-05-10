@@ -14,7 +14,7 @@ function Registration() {
     e.preventDefault();
     try {
       await register(username, email, password);
-      navigate("/login");
+      navigate("/");
     } catch (error) {
       console.error("Registration error:", error);
       setError("Registration failed. Please try again.");

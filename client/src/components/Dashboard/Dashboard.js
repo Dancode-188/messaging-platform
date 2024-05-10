@@ -1,67 +1,101 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../../AuthContext";
 import "./Dashboard.css";
+import ChatList from "../ChatList/ChatList";
+import ChatWindow from "../ChatWindow/ChatWindow";
+import ContactList from "../ContactList/ContactList";
+import Settings from "../Settings/Settings";
+import axios from "axios";
 
 function Dashboard() {
-  const [user, setUser] = useState(null);
-  const [activeSection, setActiveSection] = useState("chats");
-  const [error, setError] = useState(null);
+  const [activeComponent, setActiveComponent] = useState("chats");
+  const [selectedChat, setSelectedChat] = useState(null);
+  const [contacts, setContacts] = useState([]);
+  const [chats, setChats] = useState([]);
   const navigate = useNavigate();
+  const { isLoggedIn, user, logout } = useContext(AuthContext);
+
+   const fetchContacts = useCallback(async () => {
+     try {
+       const response = await axios.get("/api/contacts", {
+         headers: { Authorization: `Bearer ${user.token}` },
+       });
+       setContacts(response.data);
+     } catch (error) {
+       console.error("Error fetching contacts:", error);
+     }
+   }, [user.token]);
+
+  const fetchChats = useCallback(async () => {
+    try {
+      const response = await axios.get("/api/chats", {
+        headers: { Authorization: `Bearer ${user.token}` },
+      });
+      setChats(response.data);
+    } catch (error) {
+      console.error("Error fetching chats:", error);
+    }
+  }, [user.token]);
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          navigate("/login");
-          return;
-        }
-
-        const response = await fetch("/api/user", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (response.ok) {
-          const userData = await response.json();
-          setUser(userData);
-        } else {
-          navigate("/login");
-        }
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-        setError("Failed to fetch user data. Please try again.");
-      }
-    };
-
-    fetchUserData();
-  }, [navigate]);
+    if (!isLoggedIn) {
+      navigate("/login");
+    } else {
+      fetchContacts();
+      fetchChats();
+    }
+  }, [isLoggedIn, navigate, fetchContacts, fetchChats]);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    logout();
     navigate("/login");
   };
 
-  const renderSection = () => {
-    switch (activeSection) {
-      case "contacts":
-        return <ContactsSection />;
+  const handleChatSelect = (chatId) => {
+    setSelectedChat(chatId);
+  };
+
+  const handleContactSelect = (contactId) => {
+    console.log("Selected contact:", contactId);
+  };
+
+  const renderActiveComponent = () => {
+    switch (activeComponent) {
       case "chats":
-        return <ChatsSection />;
+        return (
+          <>
+            <div className="section">
+              <h2>Recent Chats</h2>
+              <ChatList onChatSelect={handleChatSelect} chats = {chats}/>
+            </div>
+            <div className="section">
+              <h2>Chat Window</h2>
+              {selectedChat ? (
+                <ChatWindow chatId={selectedChat} />
+              ) : (
+                <div className="empty-state">No chat selected.</div>
+              )}
+            </div>
+          </>
+        );
+      case "contacts":
+        return (
+          <div className="section">
+            <h2>Contacts</h2>
+            <ContactList onContactSelect={handleContactSelect} contacts={contacts} />
+          </div>
+        );
       case "settings":
-        return <SettingsSection />;
+        return <Settings />;
       default:
         return null;
     }
   };
 
+
   if (!user) {
     return <div className="dashboard-container">Loading...</div>;
-  }
-
-  if (error) {
-    return <div className="dashboard-container">{error}</div>;
   }
 
   return (
@@ -69,51 +103,64 @@ function Dashboard() {
       <div className="sidebar">
         <div className="sidebar-header">
           <h2>Welcome, {user.username}!</h2>
-          <button onClick={handleLogout}>Logout</button>
+          <button className="logout-btn" onClick={handleLogout}>
+            Logout
+          </button>
         </div>
         <div className="sidebar-menu">
           <button
-            className={activeSection === "contacts" ? "active" : ""}
-            onClick={() => setActiveSection("contacts")}
+            className={`menu-item ${
+              activeComponent === "contacts" ? "active" : ""
+            }`}
+            onClick={() => setActiveComponent("contacts")}
             aria-label="Contacts"
           >
-            Contacts
+            <i className="fas fa-user-friends"></i>
+            <span>Contacts</span>
           </button>
           <button
-            className={activeSection === "chats" ? "active" : ""}
-            onClick={() => setActiveSection("chats")}
+            className={`menu-item ${activeComponent === "chats" ? "active" : ""}`}
+            onClick={() => setActiveComponent("chats")}
             aria-label="Chats"
           >
-            Chats
+            <i className="fas fa-comments"></i>
+            <span>Chats</span>
           </button>
           <button
-            className={activeSection === "settings" ? "active" : ""}
-            onClick={() => setActiveSection("settings")}
+            className={`menu-item ${
+              activeComponent === "settings" ? "active" : ""
+            }`}
+            onClick={() => setActiveComponent("settings")}
             aria-label="Settings"
           >
-            Settings
+            <i className="fas fa-cog"></i>
+            <span>Settings</span>
           </button>
-          <button aria-label="New Chat">New Chat</button>
+          <button
+            className="new-chat-btn"
+            aria-label="New Chat"
+            onClick={() => navigate("/new-chat")}
+          >
+            <i className="fas fa-plus"></i>
+            <span>New Chat</span>
+          </button>
         </div>
       </div>
-      <div className="main-content">{renderSection()}</div>
+      <div className="main-content">
+        <div className="header">
+          <h1>Dashboard</h1>
+          <div className="search-bar">
+            <input type="text" placeholder="Search..." />
+            <button className="search-btn">
+              <i className="fas fa-search"></i>
+            </button>
+          </div>
+        </div>
+        <div className="content">{renderActiveComponent()}</div>
+      </div>
     </div>
   );
 }
 
-function ContactsSection() {
-  // Implement contacts section
-  return <div>Contacts Section</div>;
-}
-
-function ChatsSection() {
-  // Implement chats section
-  return <div>Chats Section</div>;
-}
-
-function SettingsSection() {
-  // Implement settings section
-  return <div>Settings Section</div>;
-}
 
 export default Dashboard;
